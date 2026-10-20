@@ -74,7 +74,7 @@ pip install -r requirements.txt
 <summary><strong>conda</strong></summary>
 
 ```bash
-conda env create -f environment.yml
+conda env create -f conda/environment.yml
 ```
 
 This creates an environment called `anidash`. `main.sh` looks for `.venv/` by default, so open it and follow the comments:
