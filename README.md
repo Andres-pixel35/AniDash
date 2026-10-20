@@ -122,7 +122,8 @@ Or go straight to an option by passing its number:
 ./main.sh 4
 ```
 
-**Update final** also takes `--all` to skip its menu and update every work on your list straight away:
+**Update final** skips its menu when run this way: `./main.sh 6` updates the airing works, and `--all` updates every work
+on your list:
 
 ```bash
 ./main.sh 6 --all

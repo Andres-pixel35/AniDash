@@ -95,9 +95,11 @@ while true; do
     if [ "$len_args" -ne 0 ]; then
         action="${args[0]}"
         flag="${args[1]}"
+        from_args=true
         len_args=0
     else
         flag=""
+        from_args=false
         echo ""
         echo "What do you want to do?"
 
@@ -155,8 +157,11 @@ while true; do
         6)
             echo ""
             if file_exists "$FINAL_PATH"; then
+                # from the args there is no menu: "6" updates the airing works and "6 --all" every work
                 if [ "$flag" == "--all" ]; then
                     choice=2
+                elif [ "$from_args" == true ]; then
+                    choice=1
                 else
                     echo "How do you want to update "$FINAL_CSV"?"
                     echo "1: Airing works, with the information from airing_anime_M.csv. The ones still releasing or yet to"
