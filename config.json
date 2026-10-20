@@ -1,0 +1,81 @@
+{
+    "user_name": "Tricky",
+    "path_user_csv": "./data/user/works.csv",
+    "path_original_airing": "./data/original/airing_anime.csv",
+    "path_modified_airing": "./data/modified/airing_anime_M.csv",
+    "path_historical_csv": "./data/modified/anime.csv",
+    "path_final_csv": "./data/final/final.csv",
+    "path_last_season": "./data/modified/last_season.txt",
+    "sort_final": null,
+    "show_unmatched": true,
+    "valid_type": [
+        "tv",
+        "ona",
+        "ova",
+        "movie",
+        "tv_short",
+        "special",
+        "music"
+    ],
+    "type_mappings": {
+        "anime": [
+            "tv",
+            "ova",
+            "ona",
+            "tv_short"
+        ],
+        "tv": [
+            "tv",
+            "ova",
+            "ona",
+            "tv_short"
+        ],
+        "tv_short": [
+            "tv_short",
+            "tv",
+            "ona"
+        ],
+        "movie": [
+            "movie",
+            "ona",
+            "ova"
+        ],
+        "film": [
+            "movie",
+            "ona",
+            "ova"
+        ],
+        "ona": [
+            "tv",
+            "movie",
+            "ona",
+            "tv_short"
+        ],
+        "ova": [
+            "tv",
+            "ova",
+            "movie"
+        ],
+        "special": [
+            "special",
+            "ova",
+            "ona"
+        ],
+        "music": [
+            "music",
+            "ona",
+            "ova"
+        ]
+    },
+    "blue_style": {
+        "qmark": "fg:#00d7ff bold",
+        "question": "fg:#ffffff bold",
+        "answer": "fg:#005fff bold",
+        "pointer": "fg:#00d7ff bold",
+        "highlighted": "fg:#00d7ff bold",
+        "selected": "fg:#00afff",
+        "text": "fg:#e4e4e4",
+        "completion-menu.completion": "bg:#000087 fg:#eeeeee",
+        "completion-menu.completion.current": "bg:#005fff fg:#ffffff"
+    }
+}

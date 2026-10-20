@@ -1,0 +1,9 @@
+pandas==3.0.5
+numpy==2.5.1
+scikit-learn==1.9.0
+joblib==1.6.0
+streamlit==1.66.0
+rapidfuzz==3.14.5
+questionary==2.1.1
+prompt_toolkit==3.0.52
+requests==2.34.2

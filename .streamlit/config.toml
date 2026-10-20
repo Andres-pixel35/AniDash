@@ -1,0 +1,34 @@
+# Catppuccin: Mocha for dark mode, Latte for light mode (https://catppuccin.com/palette).
+# Soft backgrounds, muted text and one accent (mauve) so the dashboard is easy on the eyes.
+[theme]
+font = "Figtree:https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap, sans-serif"
+baseRadius = "0.5rem"
+buttonRadius = "0.5rem"
+showWidgetBorder = true
+# this Streamlit version only takes chart colors here, for both modes: these are the Latte accents, and
+# charts.show swaps them for their Mocha twins in dark mode
+chartCategoricalColors = ["#8839EF", "#1E66F5", "#179299", "#FE640B", "#EA76CB", "#40A02B", "#DF8E1D", "#04A5E5", "#D20F39", "#7287FD"]
+# low values Latte crust, high values mauve through lavender
+chartSequentialColors = ["#DCE0E8", "#C4CCED", "#ADB8F1", "#95A5F6", "#7E91FB", "#747EFB", "#796DF8", "#7E5CF5", "#834AF2", "#8839EF"]
+
+[theme.dark]
+primaryColor = "#CBA6F7"
+backgroundColor = "#1E1E2E"
+secondaryBackgroundColor = "#181825"
+textColor = "#CDD6F4"
+linkColor = "#89B4FA"
+borderColor = "#313244"
+dataframeHeaderBackgroundColor = "#181825"
+
+[theme.light]
+primaryColor = "#8839EF"
+backgroundColor = "#EFF1F5"
+secondaryBackgroundColor = "#E6E9EF"
+textColor = "#4C4F69"
+linkColor = "#1E66F5"
+borderColor = "#CCD0DA"
+dataframeHeaderBackgroundColor = "#E6E9EF"
+
+[client]
+# "viewer" keeps the theme toggle in the menu and hides only the developer options
+toolbarMode = "viewer"

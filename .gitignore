@@ -1,0 +1,3 @@
+__pycache__/
+.venv/
+data/original/airing_anime.csv
