@@ -53,7 +53,7 @@ Then create the environment with whichever tool you prefer.
 <summary><strong>uv</strong></summary>
 
 ```bash
-uv venv --python 3.13
+uv venv --python 3.13 .venv
 uv pip install -r requirements.txt
 ```
 
@@ -122,6 +122,12 @@ Or go straight to an option by passing its number:
 ./main.sh 4
 ```
 
+**Update final** also takes `--all` to skip its menu and update every work on your list straight away:
+
+```bash
+./main.sh 6 --all
+```
+
 | # | Option | What it does |
 |---|--------|--------------|
 | 1 | **Sync your csv** | Matches your list with `anime.csv` and creates `final.csv` with the full information of every match. Exact titles are matched first (with their punctuation, so `K-ON!` and `K-ON!!` stay apart), then the closest one (85% similarity or more) among the formats your type allows, leaving out the works already matched. The titles left unmatched are printed at the end. |
@@ -129,7 +135,7 @@ Or go straight to an option by passing its number:
 | 3 | **Remove work** | Removes works from `final.csv`, with autocomplete and a confirmation for each one. |
 | 4 | **Dashboard** | Launches the dashboard at `http://localhost:8501`, stop it with `ctrl + c`. You can also run `streamlit run streamlit_app.py`. |
 | 5 | **Update airing** | Fetches from AniList every work releasing now, plus the ones yet to release from this and next season (Japanese, Chinese and Korean), cleans them and merges them into `anime.csv`. Works from next season only reach `anime.csv` once their season starts, and works that stopped airing are fetched one last time so their final episodes and scores are kept. |
-| 6 | **Update final** | Brings the latest episodes, scores and community numbers of the airing works on your list into `final.csv`. |
+| 6 | **Update final** | Brings the latest information into `final.csv`, choose how (or go back to the menu): **Airing works** takes the episodes, scores and community numbers of the airing works on your list from `airing_anime_M.csv`, and the works still releasing or yet to release on your list that are no longer airing (finished, cancelled or postponed) from `anime.csv`. **Every work** takes every work on your list from `anime.csv`. |
 | 7 | **Fetch from AniList** | Looks up a work on AniList by title and format and adds it to `anime.csv`, or replaces it if it is already there. Use it for works missing from the database. |
 | 8 | **Exit** | Closes the program. |
 
@@ -176,7 +182,7 @@ Every setting lives in `config.json`.
 | `path_user_csv` | Your list, the input of **Sync your csv**. |
 | `path_original_airing` | The airing works as they come from AniList. |
 | `path_modified_airing` | The airing works once cleaned, used by **Update final** and the **Airing** page. |
-| `path_historical_csv` | The anime database, `anime.csv`. |
+| `path_historical_csv` | The anime database, `anime.csv`, also used by **Update final**. |
 | `path_final_csv` | Your dataset, the one the dashboard reads. |
 | `path_last_season` | The last season fetched, so the first fetch of a new season also refetches the previous one. |
 | `sort_final` | How `final.csv` is sorted: `"date"`, `"title"`, or `null` to keep the order the works were added. |

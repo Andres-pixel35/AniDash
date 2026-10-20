@@ -87,14 +87,17 @@ len=${#OPTIONS[@]}
 
 args=("$@")
 len_args="$#"
-# no argument, or a single option number (one digit, so at most 9 options)
-[[ $# -eq 0 || ( $# -eq 1 && $1 =~ ^[1-$len]$ ) ]] || { echo ""; echo "Usage: ./main.sh [1-$len]"; shutdown; }
+# no argument, a single option number (one digit, so at most 9 options) or "6 --all" to update every work of final.csv
+[[ $# -eq 0 || ( $# -eq 1 && $1 =~ ^[1-$len]$ ) || ( $# -eq 2 && $1 == 6 && $2 == --all ) ]] \
+    || { echo ""; echo "Usage: ./main.sh [1-$len] | ./main.sh 6 --all"; shutdown; }
 
 while true; do
     if [ "$len_args" -ne 0 ]; then
         action="${args[0]}"
+        flag="${args[1]}"
         len_args=0
     else
+        flag=""
         echo ""
         echo "What do you want to do?"
 
@@ -152,13 +155,22 @@ while true; do
         6)
             echo ""
             if file_exists "$FINAL_PATH"; then
-                echo "This action will update the airing works in "$FINAL_CSV" with the information from airing_anime_M.csv"
-
-                if confirm "Do you want to proceed?" "Y"; then
-                    python -m src.pipeline.update_final_csv || shutdown
+                if [ "$flag" == "--all" ]; then
+                    choice=2
                 else
-                    echo "Going back to actions."
+                    echo "How do you want to update "$FINAL_CSV"?"
+                    echo "1: Airing works, with the information from airing_anime_M.csv. The ones still releasing or yet to"
+                    echo "   release in "$FINAL_CSV" that are no longer airing get the information from anime.csv"
+                    echo "2: Every work, with the information from anime.csv"
+                    echo "3: Go back to actions"
+                    read -p "Please enter the number: " choice
                 fi
+
+                case "$choice" in
+                    1) python -m src.pipeline.update_final_csv || shutdown ;;
+                    2) python -m src.pipeline.update_final_csv --all || shutdown ;;
+                    *) echo "Going back to actions." ;;
+                esac
             fi
         ;;
         7)
