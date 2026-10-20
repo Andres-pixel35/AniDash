@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
+import pandas as pd
 import streamlit as st
 from dashboard import data, filters
 from dashboard.components import inject_css
+from src.pipeline.helpers import season_offset
 
 CONFIG = json.loads(Path("config.json").read_text())
 
@@ -30,6 +32,10 @@ if page.url_path != predictor.url_path:
         # the airing csv also holds works refetched once they stopped airing, those are left out
         df = data.load_or_stop(CONFIG["path_modified_airing"])
         df = df[df["status"].isin(["Releasing", "Not Yet Released"])]
+        # anime.csv adds the works of this and next season that already finished, like a movie released this season
+        history = data.load_or_stop(CONFIG["path_historical_csv"])
+        df = pd.concat([df, *[history[(history["season"] == s.title()) & (history["season_year"] == y)]
+                              for s, y in (season_offset(0), season_offset(1))]]).drop_duplicates("anime_id")
         chosen = filters.render_airing_sidebar(df)
     else:
         df = data.load_or_stop(CONFIG["path_final_csv"])
