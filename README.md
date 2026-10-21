@@ -43,8 +43,8 @@ See it live with my own list at **[here](https://anidash.streamlit.app)**.
 Clone the repository:
 
 ```bash
-git clone https://github.com/Andres-pixel35/Anime-dashboard.git
-cd Anime-dashboard
+git clone https://github.com/Andres-pixel35/AniDash.git
+cd AniDash
 ```
 
 Then create the environment with whichever tool you prefer.
