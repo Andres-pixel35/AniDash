@@ -107,7 +107,8 @@ while true; do
             echo ""$((i+1))": "${OPTIONS[$i]}""
         done
 
-        read -p "Please enter the number: " action
+        # no more input (piped or closed stdin, ctrl + d): exit instead of looping forever
+        read -p "Please enter the number: " action || break
     fi
 
     case "$action" in

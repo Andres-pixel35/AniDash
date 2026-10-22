@@ -10,6 +10,12 @@ on:
     - cron: '10 3 * * 1'
       timezone: 'America/Bogota'
   workflow_dispatch:
+
+# one run at a time: a run that starts while another is going waits for it instead of colliding on the push
+concurrency:
+  group: update-anime
+  queue: max
+
 jobs:
   update_data:
     runs-on: ubuntu-latest
@@ -17,13 +23,16 @@ jobs:
     permissions:
       contents: write
 
-    # the monday cron and manual runs fetch the season, the daily cron updates the airing works
+    # the monday cron fetches the season, the daily cron and manual runs update the airing works
     env:
-      SEASON: ${{ github.event.schedule == '10 3 * * 1' || github.event_name == 'workflow_dispatch' }}
+      SEASON: ${{ github.event.schedule == '10 3 * * 1' }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7
+        # the latest main, not the commit from when the run was triggered, so a run that waited includes the previous push
+        with:
+          ref: main
 
       - name: Setup virtual environment and run script
         run: |
@@ -35,7 +44,8 @@ jobs:
             python -m src.pipeline.fetch_season
           else
             chmod +x ./main.sh
-            echo -e "\nn" | ./main.sh 5
+            # no input: the confirmation takes its default (yes) and the menu exits when the action ends
+            ./main.sh 5 < /dev/null
           fi
 
       - name: Commit and push changes
