@@ -13,6 +13,7 @@ inject_css()
 
 PAGES = "dashboard/pages/"
 predictor = st.Page(PAGES + "predictor.py", title="Score predictor", icon=":material/model_training:")
+explorer = st.Page(PAGES + "explorer.py", title="Explorer", icon=":material/table_view:")
 airing = st.Page(PAGES + "airing.py", title="Airing", icon=":material/podcasts:")
 page = st.navigation([
     st.Page(PAGES + "overview.py", title="Overview", icon=":material/space_dashboard:", default=True),
@@ -21,7 +22,7 @@ page = st.navigation([
     st.Page(PAGES + "content.py", title="Genres & Studios", icon=":material/category:"),
     st.Page(PAGES + "watch_time.py", title="Watch time", icon=":material/schedule:"),
     st.Page(PAGES + "community.py", title="Community", icon=":material/groups:"),
-    st.Page(PAGES + "explorer.py", title="Explorer", icon=":material/table_view:"),
+    explorer,
     airing,
     predictor,
 ], position="top")
@@ -39,7 +40,7 @@ if page.url_path != predictor.url_path:
         chosen = filters.render_airing_sidebar(df)
     else:
         df = data.load_or_stop(CONFIG["path_final_csv"])
-        chosen = filters.render_sidebar(df)
+        chosen = filters.render_sidebar(df, english=page.url_path != explorer.url_path)
     df = data.with_names(df, st.session_state.get("f_english", False))
     filtered = data.apply_filters(df, chosen)
     st.session_state["full"] = df

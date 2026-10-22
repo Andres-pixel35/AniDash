@@ -21,20 +21,10 @@ if shown.empty:
     st.info("No works match this view and the current filters.", icon=":material/info:")
     st.stop()
 
-COLUMNS = {
-    "name": "Title", "type": "Format", "status": "Airing status", "episodes": "Episodes", "start_date": "Start date",
-    "studio_list": "Studios", "genres": "Genres", "score": "Score", "popularity": "Popularity",
-    "streaming_sites": "Streaming on", "site_url": "AniList page",
-}
+DEFAULT = ["title", "type", "status", "episodes", "start_date", "studio_list", "genres", "score", "popularity",
+           "streaming_sites", "site_url"]
 shown = shown.sort_values("popularity", ascending=False)
-event = st.dataframe(
-    shown[list(COLUMNS)], hide_index=True, width="stretch", height=560, on_select="rerun",
-    selection_mode="single-row", key=ui.selection_key("air_table", shown),
-    column_config=COLUMNS | {
-        "start_date": st.column_config.DateColumn("Start date", format="YYYY-MM-DD"),
-        "site_url": st.column_config.LinkColumn("AniList page", display_text="Open"),
-    },
-)
+event, _ = ui.column_table(shown, DEFAULT, "air", height=560)
 st.caption(f"{ui.plural(len(shown), 'work')} · sorted by popularity, click a header to sort by it. "
            "Select a row for its details.")
 

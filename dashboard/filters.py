@@ -33,13 +33,22 @@ def _range(df, col, spec):
     return (*chosen, keep_unknown)
 
 
-def render_sidebar(df):
-    """draws the filters and returns them in the shape data.apply_filters expects"""
+def _english_toggle(show):
+    if show:
+        st.toggle("Prefer English titles", key="f_english", help="Charts show the English title when there is one.")
+    else:
+        # pages without charts don't draw it, copying its value keeps Streamlit from dropping it until a chart page
+        st.session_state["f_english"] = st.session_state.get("f_english", False)
+
+
+def render_sidebar(df, english=True):
+    """draws the filters and returns them in the shape data.apply_filters expects. english=False hides the
+    Prefer English titles toggle, for pages without charts"""
     filters = {"categories": {}, "lists": {}, "ranges": {}}
 
     with st.sidebar:
         st.markdown("### :material/tune: Filters")
-        st.toggle("Prefer English titles", key="f_english", help="Charts show the English title when there is one.")
+        _english_toggle(english)
 
         with st.expander(":material/calendar_month: Release", expanded=True):
             filters["ranges"]["year"] = _range(df, "year", {"label": "Year", "unknown_label": "Include unknown year"})
@@ -77,7 +86,7 @@ def render_airing_sidebar(df):
 
     with st.sidebar:
         st.markdown("### :material/tune: Filters")
-        st.toggle("Prefer English titles", key="f_english", help="Charts show the English title when there is one.")
+        _english_toggle(False)
         filters["categories"]["type"] = _multiselect(df, "type", CATEGORY_FILTERS["type"], "a_")
         filters["lists"]["genres"] = (_multiselect(df, "genres", "Genres", "a_"),
                                       st.toggle("Must have every genre", key="a_genres_all",
