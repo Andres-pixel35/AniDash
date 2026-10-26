@@ -129,16 +129,27 @@ def join(values):
     values = [v for v in values if v]
     return ';'.join(values) if values else None
 
+def get_in(obj, *keys):
+    # obj[k1][k2]... that gives None instead of raising when any level is null
+    for k in keys:
+        obj = (obj or {}).get(k)
+    return obj
+
 def build_row(media):
-    studios = media['studios']['edges']
-    status = {s['status']: s['amount'] for s in media['stats']['statusDistribution']}
+    title = media.get('title') or {}
+    studios = (media.get('studios') or {}).get('edges') or []
+    cover = media.get('coverImage') or {}
+    characters = (media.get('characters') or {}).get('nodes') or []
+    staff = (media.get('staff') or {}).get('edges') or []
+    # unreleased works can come back with null stats
+    status = {s['status']: s['amount'] for s in (media.get('stats') or {}).get('statusDistribution') or []}
     next_episode = (media.get('nextAiringEpisode') or {}).get('episode')
 
     return {
         'anime_id': media['id'],
-        'title': media['title']['romaji'],
-        'english_title': media['title']['english'],
-        'japanese_title': media['title']['native'],
+        'title': title.get('romaji'),
+        'english_title': title.get('english'),
+        'japanese_title': title.get('native'),
         'type': media['format'],
         'episodes': media['episodes'],
         'duration': media['duration'],
@@ -146,10 +157,10 @@ def build_row(media):
         'source': media['source'],
         'season': media['season'],
         'season_year': media['seasonYear'],
-        'studios': join([e['node']['name'] for e in studios]),
-        'main_studios': join([e['node']['name'] for e in studios if e['isMain']]),
-        'genres': join(media['genres']),
-        'tags': join([tag['name'] for tag in media['tags']]),
+        'studios': join([get_in(e, 'node', 'name') for e in studios]),
+        'main_studios': join([get_in(e, 'node', 'name') for e in studios if e and e['isMain']]),
+        'genres': join(media['genres'] or []),
+        'tags': join([get_in(tag, 'name') for tag in media['tags'] or []]),
         'score': media['averageScore'],
         'mean_score': media['meanScore'],
         'popularity': media['popularity'],
@@ -165,14 +176,14 @@ def build_row(media):
         'country_of_origin': media['countryOfOrigin'],
         'is_licensed': media['isLicensed'],
         'hashtag': media['hashtag'],
-        'cover_image_large': media['coverImage']['large'],
-        'cover_image_color': media['coverImage']['color'],
+        'cover_image_large': cover.get('large'),
+        'cover_image_color': cover.get('color'),
         'banner_image': media['bannerImage'],
-        'main_characters': join([c['name']['full'] for c in media['characters']['nodes']]),
-        'main_staff': join([f"{e['node']['name']['full']} ({e['role']})" for e in media['staff']['edges']]),
-        'streaming_sites': join([l['site'] for l in media['externalLinks'] if l['type'] == 'STREAMING']),
+        'main_characters': join([get_in(c, 'name', 'full') for c in characters]),
+        'main_staff': join([f"{name} ({e['role']})" for e in staff if e and (name := get_in(e, 'node', 'name', 'full'))]),
+        'streaming_sites': join([get_in(l, 'site') for l in media['externalLinks'] or [] if l and l['type'] == 'STREAMING']),
         'is_adult': media['isAdult'],
-        'synonyms': join(media['synonyms']),
+        'synonyms': join(media['synonyms'] or []),
         'site_url': media['siteUrl'],
         'updated_at': media['updatedAt'],
         'collected_at': datetime.now(timezone.utc).isoformat(),
@@ -198,7 +209,7 @@ def fetch_anime_info(name, work_type):
     variables = {'search': name, 'format': work_type.upper()}
 
     try:
-        medias = post(SEARCH_QUERY, variables).get('media') or []
+        medias = [m for m in post(SEARCH_QUERY, variables).get('media') or [] if m]
         if not medias:
             raise RuntimeError(f"No match found for '{name}' with type '{work_type}'")
 
@@ -232,7 +243,7 @@ def fetch_media(filters):
     rows, page, has_next = [], 1, True
     while has_next:
         result = post(query, {'page': page})
-        rows += [build_row(m) for m in result.get('media') or [] if m['countryOfOrigin'] in COUNTRIES]
+        rows += [build_row(m) for m in result.get('media') or [] if m and m['countryOfOrigin'] in COUNTRIES]
         has_next = (result.get('pageInfo') or {}).get('hasNextPage')
         page += 1
         # AniList allows a few dozen requests per minute
