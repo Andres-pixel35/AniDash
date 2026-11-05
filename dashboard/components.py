@@ -179,7 +179,8 @@ def work_card(work):
         if other_names:
             st.caption(other_names)
         badges = [work["type"], text(work["year"]), work["season"], work["status"], work["source"], work["length"]]
-        st.markdown(" ".join(f":blue-badge[{esc(b)}]" for b in badges if b != data.UNKNOWN))
+        st.markdown(" ".join([f":blue-badge[{esc(b)}]" for b in badges if b != data.UNKNOWN]
+                             + [f":violet-badge[{esc(r)}]" for r in work["relations"]]))
 
         kpis([
             ("Score", text(work["score"], ".0f"), f"Mean user score {text(work['mean_score'], '.0f')}"),
@@ -193,7 +194,7 @@ def work_card(work):
             for col in ["start_date", "end_date"]:
                 value = work[col]
                 st.markdown(f"**{data.LABELS[col]}:** {value:%d %B %Y}" if pd.notna(value) else f"**{data.LABELS[col]}:** {data.UNKNOWN}")
-            for col in ["studio_list", "genres", "country_of_origin", "streaming_sites"]:
+            for col in ["studio_list", "genres", "country_of_origin", "streaming_sites", "social_sites"]:
                 st.markdown(f"**{data.LABELS[col]}:** {esc(text(work[col]))}")
             st.markdown(f"**{data.LABELS['tags']}:** " + (" ".join(f":gray-badge[{esc(t)}]" for t in work["tags"])
                                                      or data.UNKNOWN))

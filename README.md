@@ -15,7 +15,7 @@ Turn the list of anime you have watched into an interactive dashboard.
 ## Overview
 
 You give AniDash a CSV with the titles you have watched and their format. It matches every one against a database of more
-than 14,000 anime released since 1969 (`anime.csv`) and builds your own dataset (`final.csv`) with the start date, season,
+than 21,000 anime released since 1969 (`anime.csv`) and builds your own dataset (`final.csv`) with the start date, season,
 episodes, duration, studios, staff, genres, tags, AniList scores and community numbers of each work. A Streamlit dashboard
 then shows what your taste looks like, how much time you gave to anime, how your list compares with AniList users and what
 is airing right now, and it can estimate the AniList score of any work.
@@ -136,7 +136,7 @@ on your list:
 | 3 | **Remove work** | Removes works from `final.csv`, with autocomplete and a confirmation for each one. |
 | 4 | **Dashboard** | Launches the dashboard at `http://localhost:8501`, stop it with `ctrl + c`. You can also run `streamlit run streamlit_app.py`. |
 | 5 | **Update airing** | Fetches from AniList every work releasing now, plus the ones yet to release from this and next season (Japanese, Chinese and Korean), cleans them and merges them into `anime.csv`. Works from next season only reach `anime.csv` once their season starts, and works that stopped airing are fetched one last time so their final episodes and scores are kept. |
-| 6 | **Update final** | Brings the latest information into `final.csv`, choose how (or go back to the menu): **Airing works** takes the episodes, scores and community numbers of the airing works on your list from `airing_anime_M.csv`, and the works still releasing or yet to release on your list that are no longer airing (finished, cancelled or postponed) from `anime.csv`. **Every work** takes every work on your list from `anime.csv`. |
+| 6 | **Update final** | Brings the latest information into `final.csv`, choose how (or go back to the menu): **Airing works** takes the episodes, scores and community numbers of the airing works on your list from `airing_anime_M.csv`, and the works still releasing, yet to release or on hiatus on your list that are no longer airing (finished, cancelled or postponed) from `anime.csv`. **Every work** takes every work on your list from `anime.csv`. |
 | 7 | **Fetch from AniList** | Looks up a work on AniList by title and format and adds it to `anime.csv`, or replaces it if it is already there. Use it for works missing from the database. |
 | 8 | **Exit** | Closes the program. |
 
@@ -147,8 +147,10 @@ on your list:
 ## Dashboard
 
 Every page except the score predictor reads `final.csv`. The sidebar filters (release year and season, format, genres,
-tags, source, studios, episodes, score...) apply to every page, and you can prefer English titles over romaji. Tables let
-you select a row to see the whole work: dates, studios, staff, streaming sites, synopsis and a link to AniList.
+tags, source, relations, studios, streaming sites, episodes, score...) apply to every page, and you can prefer English
+titles over romaji. The relations filter keeps only the works with the chosen relations (sequels, works with a sequel,
+side stories, spin-offs...) or, with **Hide these relations**, hides them. Tables let you select a row to see the whole
+work: dates, studios, staff, relations, streaming sites, social media, synopsis and a link to AniList.
 Scores are the ones from AniList.
 
 | Page | What you get |
@@ -160,7 +162,7 @@ Scores are the ones from AniList.
 | **Watch time** | Biggest time sinks, episodes by format and whether the long works were worth it. |
 | **Community** | Your list against AniList users: popularity against favorites, the most dropped and most loved works, completion rate by format and the hidden gems of your list. |
 | **Explorer** | Every work on your list in a table, choose the columns, sort them and download it as CSV. |
-| **Airing** | What is airing now, and what this and next season bring, sorted by popularity with links to AniList. |
+| **Airing** | What is airing now, and what this and next season bring, sorted by popularity with links to AniList. It has its own filters, and in **This season** also one for the airing status. |
 | **Score predictor** | Estimates the AniList mean score of a work. Search it on AniList, or enter it step by step (format, source, episodes, season, studios, staff, genres, tags...) for a work that isn't there yet. |
 
 ### Score predictor
@@ -194,12 +196,10 @@ Every setting lives in `config.json`.
 
 ## Data
 
-`anime.csv` started as the dataset of [LeoRigasaki](https://github.com/LeoRigasaki). Since then it is maintained here: it
-is cleaned, kept up to date from AniList and has some works added by hand.
+`anime.csv` is fetched from AniList and maintained here: it is cleaned, kept up to date and has some works added by hand.
 
 - Placeholder values (such as `0` episodes) are turned into nulls and nothing is imputed, see
   [notes/fillin.md](notes/fillin.md) for every rule.
-- The works added by hand are listed in [notes/added_manually.txt](notes/added_manually.txt).
 
 ### Project structure
 
@@ -215,7 +215,7 @@ is cleaned, kept up to date from AniList and has some works added by hand.
 │   ├── modified/         # anime.csv and the cleaned airing works
 │   └── final/            # your dataset, final.csv
 ├── model/                # the score prediction model
-├── notes/                # how the data is cleaned and the works added by hand
+├── notes/                # how the data is cleaned
 ├── src/
 │   ├── manual/           # Add work and Remove work
 │   └── pipeline/         # fetching, cleaning, matching and merging
@@ -230,7 +230,6 @@ is cleaned, kept up to date from AniList and has some works added by hand.
 ## Acknowledgements
 
 - **[AniList](https://anilist.co)**: for the API every work comes from.
-- **[LeoRigasaki](https://github.com/LeoRigasaki)**: the original `anime.csv` comes from him.
 
 ## Contact
 

@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from api.anilist import RELATIONS
 
 SEASON_NAMES = ["WINTER", "SPRING", "SUMMER", "FALL"]
 # a (non movie) work released this many days or less before the next season starts is labeled with that next season
@@ -25,6 +26,14 @@ def save_csv(df, path):
         print(f"\nError saving {os.path.basename(path)}, the file was left as it was: {e}")
         raise SystemExit(1)
 
+def read_csv(path):
+    """
+    pd.read_csv for the files built from build_row. A relation column with a single id per row would be read as float
+    and saved back as "3009.0", so they are read as strings
+    """
+
+    return pd.read_csv(path, dtype={r.lower(): str for r in RELATIONS})
+
 def season_offset(n):
     """
     (season, year) n seasons away from the current one: 0 is the current, -1 the previous and 1 the next
@@ -34,21 +43,40 @@ def season_offset(n):
     i = now.year * 4 + (now.month - 1) // 3 + n
     return SEASON_NAMES[i % 4], i // 4
 
-# shuts out the seasons yet to come, so their works are concatenated only once their season starts. Works without
-# season or season_year are kept
-def filter_season(df):
-    season, year = season_offset(0)
-    order = df["season_year"] * 4 + df["season"].str.upper().map({name: i for i, name in enumerate(SEASON_NAMES)})
+def season_filters(season, year):
+    """
+    AniList filters for the works of season: by its season and by its start date, since AniList has no season for some
+    works. The date bounds leave out a start date with only the year, which says nothing about the season
+    """
 
-    return df[~(order > year * 4 + SEASON_NAMES.index(season))]
+    month = SEASON_NAMES.index(season) * 3 + 1
+    return [f"season: {season}, seasonYear: {year}",
+            f"startDate_greater: {year * 10000 + month * 100 - 1}, startDate_lesser: {year * 10000 + (month + 3) * 100}"]
+
+def year_only_filter(year):
+    """
+    AniList filter for the works of year whose start date has only the year (YYYY0000), no season filter catches them
+    """
+
+    return f"startDate_greater: {year - 1}9999, startDate_lesser: {year}0001"
+
+# shuts out the seasons yet to come, so their works are concatenated only once their season starts. Works without
+# season_year are kept, without season only a later year shuts them out. Works in kept_ids (already in anime.csv) are
+# kept too, so a work whose release moved to a later season still gets its new information
+def filter_season(df, kept_ids):
+    season, year = season_offset(0)
+    order = df["season_year"] * 4 + df["season"].str.upper().map({name: i for i, name in enumerate(SEASON_NAMES)}).fillna(0)
+
+    return df[~(order > year * 4 + SEASON_NAMES.index(season)) | df["anime_id"].isin(kept_ids)]
 
 def sort_by_date(df):
     """
-    sort by start_date; the rows without it are placed using the first day of their season_year + season
+    sort by start_date; the rows without it are placed using the first day of their season_year + season, or on January 1
+    of their season_year when they have no season either
     """
 
     start = pd.to_datetime(df["start_date"], errors="coerce")
-    season_month = df["season"].str.upper().map({name: i * 3 + 1 for i, name in enumerate(SEASON_NAMES)})
+    season_month = df["season"].str.upper().map({name: i * 3 + 1 for i, name in enumerate(SEASON_NAMES)}).fillna(1)
     approx = pd.to_datetime(
         pd.DataFrame({"year": df["season_year"], "month": season_month, "day": 1}), errors="coerce"
     )
@@ -68,11 +96,15 @@ def sort_final(df, how):
 
 def merge(old, new):
     """
-    old + new, the rows of new replace the ones of old with the same anime_id; start_date as YYYY-MM-DD, sorted by date
+    old + new, the rows of new replace the ones of old with the same anime_id; start_date and end_date as YYYY-MM-DD,
+    sorted by date. old can be None (no anime.csv yet), pd.concat skips it
     """
 
-    df = pd.concat([old, new], ignore_index=True).drop_duplicates(subset="anime_id", keep="last")
-    df["start_date"] = pd.to_datetime(df["start_date"], format="mixed").dt.strftime("%Y-%m-%d")
+    df = pd.concat([old, new], ignore_index=True)
+    # one type for the key, so 123 and "123" are the same work. A missing or non numeric id raises before anything is saved
+    df = df.astype({"anime_id": "int64"}).drop_duplicates(subset="anime_id", keep="last")
+    for col in ["start_date", "end_date"]:
+        df[col] = pd.to_datetime(df[col], format="mixed").dt.strftime("%Y-%m-%d")
     return sort_by_date(df)
 
 def clean_invalid(df):

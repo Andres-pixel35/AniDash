@@ -15,16 +15,20 @@ seasons = [current]
 if not last_season.exists() or last_season.read_text().strip() != f"{current[0]} {current[1]}":
     seasons.insert(0, previous)
 
-df1 = pd.read_csv(CONFIG["path_historical_csv"])
+df1 = helpers.read_csv(CONFIG["path_historical_csv"])
 
 print(f"Fetching {', '.join(f'{s} {y}' for s, y in seasons)} from Anilist")
-new_entries = pd.concat([anilist.fetch_media(f"season: {s}, seasonYear: {y}") for s, y in seasons], ignore_index=True)
+# plus the works of their years with only the year as start date
+filters = [f for s in seasons for f in helpers.season_filters(*s)] + [helpers.year_only_filter(y) for y in {y for _, y in seasons}]
+new_entries = pd.concat([anilist.fetch_media(f) for f in filters], ignore_index=True)
+# most works match both the season and the start date filter
+new_entries = new_entries.drop_duplicates(subset="anime_id", keep="last")
 
-# same cleaning as the airing works
-new_entries = helpers.clean(new_entries)
+# same cleaning as the airing works. A new work starting in this season that AniList places in the next one waits for it
+new_entries = helpers.filter_season(helpers.clean(new_entries), df1["anime_id"])
 
 # the fetched works replace the ones already in anime.csv
-df = helpers.merge(df1, new_entries.astype(df1.dtypes))
+df = helpers.merge(df1, new_entries)
 
 helpers.save_csv(df, CONFIG["path_historical_csv"])
 last_season.write_text(f"{current[0]} {current[1]}\n")

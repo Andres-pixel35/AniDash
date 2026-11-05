@@ -14,6 +14,18 @@ HEADERS = {
 # japanese, chinese and korean works, the rest are left out
 COUNTRIES = ['JP', 'CN', 'KR']
 
+# relation types kept, each one becomes a column with the ids of the anime this one is that relation of, e.g. sequel
+# holds the anime this one is a sequel of
+RELATIONS = ['PREQUEL', 'SEQUEL', 'PARENT', 'SIDE_STORY', 'SPIN_OFF', 'SUMMARY', 'ALTERNATIVE']
+
+# what this anime is to a related one, deduced from what the related one is to this anime. PARENT is missing since this
+# anime could be its SIDE_STORY, SPIN_OFF or SUMMARY
+INVERSE = {'PREQUEL': 'SEQUEL', 'SEQUEL': 'PREQUEL', 'SIDE_STORY': 'PARENT', 'SPIN_OFF': 'PARENT', 'SUMMARY': 'PARENT',
+           'ALTERNATIVE': 'ALTERNATIVE'}
+
+# external link types kept, each one becomes a column with the names of the linked sites
+LINK_TYPES = ['STREAMING', 'INFO', 'SOCIAL']
+
 # every field build_row needs, shared by all the queries
 MEDIA_FIELDS = '''
             id
@@ -65,11 +77,23 @@ MEDIA_FIELDS = '''
             countryOfOrigin
             isLicensed
             hashtag
-            coverImage {
-                large
-                color
+            relations {
+                edges {
+                    relationType(version: 2)
+                    node {
+                        id
+                        type
+                        relations {
+                            edges {
+                                relationType(version: 2)
+                                node {
+                                    id
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            bannerImage
             characters(role: MAIN, perPage: 10) {
                 nodes {
                     name {
@@ -105,7 +129,8 @@ def post(query, variables):
     send the query and return its "Page", raising if AniList answers with an error
     """
 
-    response = requests.post(URL, json={'query': query, 'variables': variables}, headers=HEADERS)
+    # a hung connection raises instead of stalling the CI run until GitHub's 6 hour limit
+    response = requests.post(URL, json={'query': query, 'variables': variables}, headers=HEADERS, timeout=60)
     data = response.json()
 
     errors = data.get('errors') or []
@@ -135,10 +160,30 @@ def get_in(obj, *keys):
         obj = (obj or {}).get(k)
     return obj
 
+def relations_of(media):
+    """
+    {column: ids of the anime media is that relation of}. The relation a related anime has back to media says it
+    directly, without one the INVERSE of its relation to media is used. Manga and novels are left out since they are
+    not in anime.csv
+    """
+
+    found = {r: [] for r in RELATIONS}
+    for e in (media.get('relations') or {}).get('edges') or []:
+        node = (e or {}).get('node') or {}
+        if node.get('type') != 'ANIME':
+            continue
+        back_edges = (node.get('relations') or {}).get('edges') or []
+        back = [b['relationType'] for b in back_edges if get_in(b, 'node', 'id') == media['id']]
+        for r in back or [INVERSE.get(e['relationType'])]:
+            # the same anime can come in more than one edge
+            if r in found and str(node['id']) not in found[r]:
+                found[r].append(str(node['id']))
+
+    return {r.lower(): join(ids) for r, ids in found.items()}
+
 def build_row(media):
     title = media.get('title') or {}
     studios = (media.get('studios') or {}).get('edges') or []
-    cover = media.get('coverImage') or {}
     characters = (media.get('characters') or {}).get('nodes') or []
     staff = (media.get('staff') or {}).get('edges') or []
     # unreleased works can come back with null stats
@@ -156,7 +201,9 @@ def build_row(media):
         'status': media['status'],
         'source': media['source'],
         'season': media['season'],
-        'season_year': media['seasonYear'],
+        # AniList has no seasonYear for most works with only a year or year and month as start date, which fmt_date
+        # drops, so the year of startDate keeps them from ending up without any year
+        'season_year': media['seasonYear'] or (media['startDate'] or {}).get('year'),
         'studios': join([get_in(e, 'node', 'name') for e in studios]),
         'main_studios': join([get_in(e, 'node', 'name') for e in studios if e and e['isMain']]),
         'genres': join(media['genres'] or []),
@@ -176,12 +223,10 @@ def build_row(media):
         'country_of_origin': media['countryOfOrigin'],
         'is_licensed': media['isLicensed'],
         'hashtag': media['hashtag'],
-        'cover_image_large': cover.get('large'),
-        'cover_image_color': cover.get('color'),
-        'banner_image': media['bannerImage'],
+        **relations_of(media),
         'main_characters': join([get_in(c, 'name', 'full') for c in characters]),
         'main_staff': join([f"{name} ({e['role']})" for e in staff if e and (name := get_in(e, 'node', 'name', 'full'))]),
-        'streaming_sites': join([get_in(l, 'site') for l in media['externalLinks'] or [] if l and l['type'] == 'STREAMING']),
+        **{f'{t.lower()}_sites': join([get_in(l, 'site') for l in media['externalLinks'] or [] if l and l['type'] == t]) for t in LINK_TYPES},
         'is_adult': media['isAdult'],
         'synonyms': join(media['synonyms'] or []),
         'site_url': media['siteUrl'],

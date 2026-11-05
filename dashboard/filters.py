@@ -33,6 +33,18 @@ def _range(df, col, spec):
     return (*chosen, keep_unknown)
 
 
+def _relations(df, filters, prefix="f_"):
+    """relation multiselect plus a toggle that turns it from "only these" into "hide these" """
+    chosen = _multiselect(df, "relations", "Relations", prefix)
+    hide = st.toggle("Hide these relations", key=f"{prefix}relations_hide",
+                     help="Off: works with any of the chosen relations. On: works with none of them, "
+                          "e.g. hide Sequel to see only new stories.")
+    if hide:
+        filters["hidden"]["relations"] = chosen
+    else:
+        filters["lists"]["relations"] = (chosen, False)
+
+
 def _english_toggle(show):
     if show:
         st.toggle("Prefer English titles", key="f_english", help="Charts show the English title when there is one.")
@@ -44,7 +56,7 @@ def _english_toggle(show):
 def render_sidebar(df, english=True):
     """draws the filters and returns them in the shape data.apply_filters expects. english=False hides the
     Prefer English titles toggle, for pages without charts"""
-    filters = {"categories": {}, "lists": {}, "ranges": {}}
+    filters = {"categories": {}, "lists": {}, "hidden": {}, "ranges": {}}
 
     with st.sidebar:
         st.markdown("### :material/tune: Filters")
@@ -62,10 +74,12 @@ def render_sidebar(df, english=True):
             filters["lists"]["tags"] = (_multiselect(df, "tags", "Tags"),
                                         st.toggle("Must have every tag", key="f_tags_all"))
             filters["categories"]["source"] = _multiselect(df, "source", CATEGORY_FILTERS["source"])
+            _relations(df, filters)
 
         with st.expander(":material/movie: Production"):
             filters["lists"]["studio_list"] = (_multiselect(df, "studio_list", "Studios"), False)
             filters["categories"]["country_of_origin"] = _multiselect(df, "country_of_origin", "Country")
+            filters["lists"]["streaming_sites"] = (_multiselect(df, "streaming_sites", "Streaming on"), False)
             filters["ranges"]["episodes"] = _range(df, "episodes", {"label": "Episodes",
                                                                    "unknown_label": "Include unknown episodes"})
 
@@ -82,12 +96,16 @@ def render_sidebar(df, english=True):
 def render_airing_sidebar(df):
     """the airing page only gets the filters that make sense for works on air, their keys start with "a_" so
     they don't clash with the ones of the list pages"""
-    filters = {"categories": {}, "lists": {}, "ranges": {}}
+    filters = {"categories": {}, "lists": {}, "hidden": {}, "ranges": {}}
 
     with st.sidebar:
         st.markdown("### :material/tune: Filters")
         _english_toggle(False)
         filters["categories"]["type"] = _multiselect(df, "type", CATEGORY_FILTERS["type"], "a_")
+        # air_view is the view picker of pages/airing.py: only this season mixes finished, airing and upcoming works
+        if st.session_state.get("air_view") == "This season":
+            filters["categories"]["status"] = _multiselect(df, "status", CATEGORY_FILTERS["status"], "a_")
+        _relations(df, filters, "a_")
         filters["lists"]["genres"] = (_multiselect(df, "genres", "Genres", "a_"),
                                       st.toggle("Must have every genre", key="a_genres_all",
                                                 help="Off: works with any of the chosen genres."))
@@ -96,6 +114,7 @@ def render_airing_sidebar(df):
         filters["lists"]["studio_list"] = (_multiselect(df, "studio_list", "Studios", "a_"), False)
         for col in ["source", "country_of_origin"]:
             filters["categories"][col] = _multiselect(df, col, CATEGORY_FILTERS[col], "a_")
+        filters["lists"]["streaming_sites"] = (_multiselect(df, "streaming_sites", "Streaming on", "a_"), False)
         st.button("Reset filters", icon=":material/restart_alt:", on_click=_reset, args=("a_",), width="stretch")
 
     return filters
@@ -105,6 +124,7 @@ def active_count(filters, df):
     """how many filters differ from their default"""
     count = sum(bool(chosen) for chosen in filters["categories"].values())
     count += sum(bool(chosen) for chosen, _ in filters["lists"].values())
+    count += sum(bool(chosen) for chosen in filters["hidden"].values())
     for col, (low, high, keep_unknown) in filters["ranges"].items():
         values = df[col].dropna()
         count += (low, high) != (math.floor(values.min()), math.ceil(values.max())) or not keep_unknown

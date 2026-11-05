@@ -22,18 +22,18 @@ def update_rows(df_f, df_src):
 
 def no_longer_airing(df_f, df_a, df_h):
     """
-    rows of df_h for the works df_f still has as RELEASING or NOT_YET_RELEASED that are not in df_a, most likely because
-    they finished airing or their release moved
+    rows of df_h for the works df_f still has as RELEASING, NOT_YET_RELEASED or HIATUS that are not in df_a, most likely
+    because they finished airing, their release moved or they were cancelled
     """
 
-    pending = df_f["status"].isin(["RELEASING", "NOT_YET_RELEASED"])
+    pending = df_f["status"].isin(["RELEASING", "NOT_YET_RELEASED", "HIATUS"])
     ids = df_f.loc[pending & ~df_f["anime_id"].isin(df_a["anime_id"]), "anime_id"]
     return df_h[df_h["anime_id"].isin(ids)]
 
 if __name__ == "__main__":
-    df_a = pd.read_csv(CONFIG["path_modified_airing"])
-    df_h = pd.read_csv(CONFIG["path_historical_csv"])
-    df_f = pd.read_csv(CONFIG["path_final_csv"])
+    df_a = helpers.read_csv(CONFIG["path_modified_airing"])
+    df_h = helpers.read_csv(CONFIG["path_historical_csv"])
+    df_f = helpers.read_csv(CONFIG["path_final_csv"])
 
     # --all: every entry gets anime.csv's information
     if "--all" in sys.argv[1:]:

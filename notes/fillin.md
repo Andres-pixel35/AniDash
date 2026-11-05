@@ -10,7 +10,7 @@ The airing file (`cleanup_airing`), the seasons (`fetch_season`) and works fetch
 3. `fill_episodes`, `fill_season_year`, `fill_season`.
 4. Rows are **not** dropped for missing values, including a missing `start_date`.
 5. `helpers.merge` joins them with the historical file and drops duplicates by `anime_id` (the unique key of every work), keeping the new row (it has newer information).
-   `start_date` is saved as `YYYY-MM-DD` and the file is sorted by date.
+   `start_date` and `end_date` are saved as `YYYY-MM-DD` and the file is sorted by date.
 
 ## Values that only pretend to be data (`clean_invalid`)
 Turned into NaN before anything is filled (the wrong `season_year` and `season` are then refilled below):
@@ -24,7 +24,8 @@ Turned into NaN before anything is filled (the wrong `season_year` and `season` 
 Only for airing works: `next_episode_number - 1`. If the next episode is 0 or 1 nothing can be inferred and it stays NaN.
 
 ## season_year
-Only if it is null (originally or after `clean_invalid`): the year of `start_date`. Without `start_date` it stays NaN.
+`build_row` already uses the year of AniList's `startDate` when `seasonYear` is missing (it keeps works with only a year or year and month as start date from having no year).
+Only if it is still null (originally or after `clean_invalid`): the year of `start_date`. Without `start_date` it stays NaN.
 
 ## season
 Only if it is null (originally or after `clean_invalid`) and `start_date` exists, otherwise it stays NaN.
@@ -32,7 +33,7 @@ Only if it is null (originally or after `clean_invalid`) and `start_date` exists
 - Any other type: the season that `start_date + 30 days` falls in, so a work released on June 28th (or on December 7th) is `SUMMER` (`WINTER`), not `SPRING` (`FALL`).
 
 ## Sorting by date
-Rows are sorted by `start_date`; rows without it are placed using the first day of their `season` in `season_year`.
+Rows are sorted by `start_date`; rows without it are placed using the first day of their `season` in `season_year`, or on January 1 of `season_year` without `season`.
 
 ## Dropped columns
 `scored_by`, `rank` and `popularity_rank` are not created by `build_row` since they were (almost) always empty or 0 in the source.

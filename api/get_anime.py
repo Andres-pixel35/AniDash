@@ -1,14 +1,13 @@
 import json
 from pathlib import Path
 from questionary import Style, select, confirm
-import pandas as pd
 from src.pipeline import helpers
 from api import anilist
 
 CONFIG = json.loads(Path("config.json").read_text())
 blue_style = Style.from_dict(CONFIG["blue_style"])
 
-df1 = pd.read_csv(CONFIG["path_historical_csv"])
+df1 = helpers.read_csv(CONFIG["path_historical_csv"])
 
 title = input("Enter the title of the work you want to fetch: ")
 work_type = select(
@@ -49,7 +48,7 @@ if title.strip() and work_type:
 
         if should_write:
             # the new entry replaces the old one, if any
-            df = helpers.merge(df1, helpers.clean(new_entry).astype(df1.dtypes))
+            df = helpers.merge(df1, helpers.clean(new_entry))
 
             helpers.save_csv(df, CONFIG["path_historical_csv"])
             print(success_msg)

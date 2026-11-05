@@ -94,7 +94,7 @@ def match_dfs(df1, df2, similarity_threshold=85):
 
 def main():
     df1 = pd.read_csv(CONFIG["path_user_csv"])
-    df2 = pd.read_csv(CONFIG["path_historical_csv"])
+    df2 = helpers.read_csv(CONFIG["path_historical_csv"])
 
     df, unmatched_titles = match_dfs(df1, df2)
 

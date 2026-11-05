@@ -13,17 +13,22 @@ RAW_COLUMNS = [
     "anime_id", "title", "english_title", "japanese_title", "synonyms", "type", "episodes", "duration", "status",
     "source", "season", "season_year", "studios", "main_studios", "genres", "tags", "score", "mean_score",
     "popularity", "favorites", "watching", "completed", "on_hold", "dropped", "plan_to_watch", "start_date",
-    "end_date", "synopsis", "country_of_origin", "main_characters", "main_staff", "streaming_sites", "site_url",
+    "end_date", "synopsis", "country_of_origin", "main_characters", "main_staff", "streaming_sites", "social_sites",
+    "site_url", "prequel", "sequel", "parent", "side_story", "spin_off", "summary", "alternative",
 ]
 NUMERIC_COLUMNS = [
     "episodes", "duration", "season_year", "score", "mean_score", "popularity", "favorites", "watching",
     "completed", "on_hold", "dropped", "plan_to_watch",
 ]
 CATEGORY_COLUMNS = ["type", "status", "source", "season", "country_of_origin"]
-LIST_COLUMNS = ["synonyms", "studios", "main_studios", "genres", "tags", "main_characters", "streaming_sites"]
-LIST_LIKE = LIST_COLUMNS + ["main_staff", "studio_list"]
-# links AniList files under "streaming" that are not streaming services
-NOT_STREAMING = {"Official Site", "Twitter", "X"}
+LIST_COLUMNS = ["synonyms", "studios", "main_studios", "genres", "tags", "main_characters", "streaming_sites",
+                "social_sites"]
+LIST_LIKE = LIST_COLUMNS + ["main_staff", "studio_list", "relations"]
+# relation columns hold the ids of the anime this work is that relation of, e.g. a filled sequel means it is a sequel
+RELATIONS = {
+    "sequel": "Sequel", "prequel": "Has a sequel", "side_story": "Side story", "spin_off": "Spin-off",
+    "summary": "Recap", "alternative": "Alternative version", "parent": "Has side stories or spin-offs",
+}
 
 CODE_LABELS = {
     "TV": "TV", "TV_SHORT": "TV Short", "OVA": "OVA", "ONA": "ONA",
@@ -51,6 +56,7 @@ LABELS = {
     "on_hold": "On hold", "dropped": "Dropped", "plan_to_watch": "Plan to watch",
     "completion_rate": "Completion rate", "drop_rate": "Drop rate", "country_of_origin": "Country",
     "main_characters": "Main characters", "main_staff": "Key staff", "streaming_sites": "Streaming on",
+    "social_sites": "Social media", "relations": "Relations",
     "synopsis": "Synopsis", "site_url": "AniList page",
 }
 
@@ -93,7 +99,6 @@ def prepare(raw):
         df[col] = df[col].map(_pretty)
     for col in LIST_COLUMNS:
         df[col] = df[col].map(_split)
-    df["streaming_sites"] = df["streaming_sites"].map(lambda sites: [s for s in sites if s not in NOT_STREAMING])
     df[NUMERIC_COLUMNS] = df[NUMERIC_COLUMNS].apply(pd.to_numeric, errors="coerce")
     for col in ["start_date", "end_date"]:
         df[col] = pd.to_datetime(df[col], errors="coerce")
@@ -102,6 +107,8 @@ def prepare(raw):
     df["staff"] = df["main_staff"].map(_parse_staff)
     df["main_staff"] = df["main_staff"].map(_split)
     df["synopsis"] = df["synopsis"].map(_clean_synopsis)
+    labels = list(RELATIONS.values())
+    df["relations"] = [[labels[i] for i in np.flatnonzero(row)] for row in df[list(RELATIONS)].notna().to_numpy()]
 
     df["year"] = df["season_year"].fillna(df["start_date"].dt.year).astype("Int64")
     df["decade"] = ((df["year"] // 10 * 10).astype("string") + "s").fillna(UNKNOWN).astype(str)
@@ -165,7 +172,8 @@ def with_names(df, prefer_english):
 
 def apply_filters(df, filters):
     """filters: categories {col: [values]}, lists {col: ([values], match_all)},
-    ranges {col: (low, high, keep_unknown)}. Empty selections don't filter"""
+    hidden {col: [values]} (list columns, works with any of them are dropped), ranges {col: (low, high, keep_unknown)}.
+    Empty selections don't filter"""
 
     mask = pd.Series(True, index=df.index)
 
@@ -177,6 +185,10 @@ def apply_filters(df, filters):
         if chosen:
             wanted = set(chosen)
             mask &= df[col].map(lambda values: wanted.issubset(values) if match_all else not wanted.isdisjoint(values))
+
+    for col, chosen in filters["hidden"].items():
+        if chosen:
+            mask &= df[col].map(set(chosen).isdisjoint)
 
     for col, (low, high, keep_unknown) in filters["ranges"].items():
         in_range = df[col].between(low, high).fillna(False).astype(bool)
@@ -207,7 +219,8 @@ def options(df, col):
     else:
         values = set(df[col].dropna())
 
-    order = {"season": SEASON_ORDER, "length": LENGTH_ORDER, "type": FORMAT_ORDER}.get(col)
+    order = {"season": SEASON_ORDER, "length": LENGTH_ORDER, "type": FORMAT_ORDER,
+             "relations": list(RELATIONS.values())}.get(col)
     known = sorted(values - {UNKNOWN}, key=str.lower)
     if order:
         known = [v for v in order if v in values] + [v for v in known if v not in order]

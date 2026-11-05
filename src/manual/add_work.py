@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from questionary import Style, autocomplete
 from src.manual import helpers
-from src.pipeline.helpers import sort_final as sort_final_df, save_csv
+from src.pipeline.helpers import sort_final as sort_final_df, save_csv, read_csv
 
 CONFIG = json.loads(Path("config.json").read_text())
 blue_style = Style.from_dict(CONFIG["blue_style"])
@@ -11,10 +11,10 @@ final_csv = Path(CONFIG["path_final_csv"]).name
 
 final_path = Path(CONFIG["path_final_csv"])
 final_exists = final_path.is_file() and final_path.stat().st_size > 0
-df = pd.read_csv(CONFIG["path_historical_csv"])
+df = read_csv(CONFIG["path_historical_csv"])
 
 if final_exists:
-    final_df = pd.read_csv(CONFIG["path_final_csv"])
+    final_df = read_csv(CONFIG["path_final_csv"])
 
 choices = helpers.get_choices(df)
 

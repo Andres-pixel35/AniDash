@@ -1,15 +1,14 @@
 import json
-import pandas as pd
 from pathlib import Path
 from questionary import Style, autocomplete, confirm
 from src.manual import helpers
-from src.pipeline.helpers import save_csv
+from src.pipeline.helpers import save_csv, read_csv
 
 CONFIG = json.loads(Path("config.json").read_text())
 blue_style = Style.from_dict(CONFIG["blue_style"])
 final_csv = Path(CONFIG["path_final_csv"]).name
 
-df = pd.read_csv(CONFIG["path_final_csv"])
+df = read_csv(CONFIG["path_final_csv"])
 
 choices = helpers.get_choices(df)
 
