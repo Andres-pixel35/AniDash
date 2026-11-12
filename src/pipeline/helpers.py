@@ -2,9 +2,8 @@ import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from api.anilist import RELATIONS
+from api.anilist import RELATIONS, SEASON_NAMES
 
-SEASON_NAMES = ["WINTER", "SPRING", "SUMMER", "FALL"]
 # a (non movie) work released this many days or less before the next season starts is labeled with that next season
 DAYS_TO_NEXT_SEASON = 30
 
