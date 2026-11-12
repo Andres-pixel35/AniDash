@@ -28,7 +28,8 @@ Only for airing works: `next_episode_number - 1`. If the next episode is 0 or 1 
 Only if it is still null (originally or after `clean_invalid`): the year of `start_date`. Without `start_date` it stays NaN.
 
 ## season
-Only if it is null (originally or after `clean_invalid`) and `start_date` exists, otherwise it stays NaN.
+`build_row` already uses the season of the month of AniList's `startDate` when `season` is missing and the date has a month but no day (day 1 is assumed, so it is always the plain season of the month, never the 30 days rule below). `start_date` stays empty for those works, since fmt_date only keeps full dates.
+Only if it is still null (originally or after `clean_invalid`) and `start_date` exists, otherwise it stays NaN.
 - Movies: the season of the month of `start_date`.
 - Any other type: the season that `start_date + 30 days` falls in, so a work released on June 28th (or on December 7th) is `SUMMER` (`WINTER`), not `SPRING` (`FALL`).
 

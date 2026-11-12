@@ -11,6 +11,9 @@ HEADERS = {
     'Origin': 'https://anilist.co',
 }
 
+# AniList seasons in the order of the year, three months each
+SEASON_NAMES = ['WINTER', 'SPRING', 'SUMMER', 'FALL']
+
 # japanese, chinese and korean works, the rest are left out
 COUNTRIES = ['JP', 'CN', 'KR']
 
@@ -149,6 +152,12 @@ def fmt_date(d):
         return f"{d['year']}-{d['month']}-{d['day']}"
     return None
 
+def month_season(d):
+    # a start date with a month but no day has no start_date (fmt_date) for fill_season to use, so the season of its month is used
+    if d and d.get('month') and not d.get('day'):
+        return SEASON_NAMES[(d['month'] - 1) // 3]
+    return None
+
 def join(values):
     # AniList may return a null name (characters, staff, synonyms)
     values = [v for v in values if v]
@@ -200,7 +209,7 @@ def build_row(media):
         'duration': media['duration'],
         'status': media['status'],
         'source': media['source'],
-        'season': media['season'],
+        'season': media['season'] or month_season(media['startDate']),
         # AniList has no seasonYear for most works with only a year or year and month as start date, which fmt_date
         # drops, so the year of startDate keeps them from ending up without any year
         'season_year': media['seasonYear'] or (media['startDate'] or {}).get('year'),
